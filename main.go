@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   "errors"
+  "math/bits"
   "unicode/utf8"
 )
 
@@ -38,6 +39,37 @@ func NewState(key []uint32, nonce []uint32) (*[16]uint32, error) {
   }
 
   return &state, nil
+}
+
+func Round(a *uint32, b *uint32, c *uint32, d *uint32) {
+  *a = *a + *b
+  *d = *d ^ *a;
+  *d = bits.RotateLeft32(*d, 16)
+
+  *c = *c + *d;
+  *b = *b ^ *c;
+  *b = bits.RotateLeft32(*b, 12)
+
+  *a = *a + *b;
+  *d = *d ^ *a;
+  *d = bits.RotateLeft32(*d, 8)
+
+  *c = *c + *d;
+  *b = *b ^ *c;
+  *b = bits.RotateLeft32(*b, 7)
+}
+
+func Scramble(ptr_state *[16]uint32) (*[16]uint32, error) {
+  Round(&ptr_state[0], &ptr_state[1], &ptr_state[2], &ptr_state[3])
+  Round(&ptr_state[4], &ptr_state[5], &ptr_state[6], &ptr_state[7])
+  Round(&ptr_state[8], &ptr_state[9], &ptr_state[10], &ptr_state[11])
+  Round(&ptr_state[12], &ptr_state[13], &ptr_state[14], &ptr_state[15])
+
+  Round(&ptr_state[0], &ptr_state[1], &ptr_state[2], &ptr_state[3])
+  Round(&ptr_state[5], &ptr_state[6], &ptr_state[7], &ptr_state[4])
+  Round(&ptr_state[10], &ptr_state[11], &ptr_state[8], &ptr_state[9])
+  Round(&ptr_state[15], &ptr_state[12], &ptr_state[13], &ptr_state[14])
+  return ptr_state, nil
 }
 
 /**
@@ -91,4 +123,7 @@ func main() {
     return
   }
   fmt.Print(er)
+  Scramble(er)
+  fmt.Print(er)
+
 }
